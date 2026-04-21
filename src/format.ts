@@ -1,5 +1,18 @@
 export const BATON_FORMAT_VERSION = 1;
 
+export const SUPPORTED_FORMAT_VERSIONS: readonly number[] = [1];
+
+export function assertSupportedFormatVersion(v: unknown): void {
+  if (typeof v !== "number" || !Number.isInteger(v)) {
+    throw new Error(`baton manifest missing a valid batonFormatVersion (got ${JSON.stringify(v)})`);
+  }
+  if (!SUPPORTED_FORMAT_VERSIONS.includes(v)) {
+    throw new Error(
+      `unsupported baton format version ${v}. this binary supports: ${SUPPORTED_FORMAT_VERSIONS.join(", ")}. run 'baton update' to get the latest.`,
+    );
+  }
+}
+
 /**
  * A .baton archive is a gzipped tarball with:
  *   - manifest.json          (BatonManifest, required)

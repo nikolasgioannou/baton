@@ -4,7 +4,12 @@ import type { Readable } from "node:stream";
 import { createReadStream, createWriteStream } from "node:fs";
 import { pack as tarPack, extract as tarExtract } from "tar-stream";
 import type { Headers as TarHeaders } from "tar-stream";
-import { MANIFEST_FILENAME, SESSION_FILENAME, FILE_HISTORY_DIR } from "./format.ts";
+import {
+  MANIFEST_FILENAME,
+  SESSION_FILENAME,
+  FILE_HISTORY_DIR,
+  assertSupportedFormatVersion,
+} from "./format.ts";
 import type { BatonManifest } from "./format.ts";
 
 export interface PackInput {
@@ -75,6 +80,8 @@ export async function unpackBaton(src: string): Promise<UnpackedBaton> {
 
   if (!manifest) throw new Error("baton archive missing manifest.json");
   if (sessionJsonl === undefined) throw new Error("baton archive missing session.jsonl");
+
+  assertSupportedFormatVersion((manifest as { batonFormatVersion?: unknown }).batonFormatVersion);
 
   return { manifest, sessionJsonl, fileHistoryEntries };
 }
