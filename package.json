@@ -10,7 +10,11 @@
     "dev": "bun run src/index.ts",
     "build": "bun build src/index.ts --compile --outfile dist/baton",
     "test": "bun test",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
   },
   "engines": {
     "bun": ">=1.0.0"
@@ -38,7 +42,12 @@
     "share"
   ],
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/bun": "^1.3.12",
-    "typescript": "^6.0.3"
+    "eslint": "^10.2.1",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.8.3",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.59.0"
   }
 }
