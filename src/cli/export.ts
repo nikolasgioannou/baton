@@ -2,7 +2,6 @@ import { parseArgs } from "node:util";
 import { existsSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { homedir, userInfo, platform, arch } from "node:os";
-import { execFileSync } from "node:child_process";
 import { listSessionsForCwd, projectDirForCwd } from "../sessions.ts";
 import { analyzeSessionJsonl } from "../analyze.ts";
 import { collectFileHistoryForSession, fileHistorySizeBytes } from "../backups.ts";
@@ -10,6 +9,7 @@ import { packBaton } from "../container.ts";
 import { defaultBatonFilename, BATON_FORMAT_VERSION } from "../format.ts";
 import type { BatonManifest } from "../format.ts";
 import { formatBytes } from "../util.ts";
+import { detectGit } from "../git.ts";
 
 const EXPORT_USAGE = `baton export - package a claude code session
 
@@ -107,22 +107,4 @@ export async function runExport(args: string[]): Promise<number> {
   const size = statSync(outPath).size;
   process.stdout.write(`wrote ${outPath} (${formatBytes(size)}, ${analysis.turnCount} turns)\n`);
   return 0;
-}
-
-function detectGit(cwd: string): BatonManifest["git"] {
-  const run = (args: string[]): string | undefined => {
-    try {
-      return execFileSync("git", ["-C", cwd, ...args], {
-        encoding: "utf8",
-        stdio: ["ignore", "pipe", "ignore"],
-      }).trim();
-    } catch {
-      return undefined;
-    }
-  };
-  const branch = run(["rev-parse", "--abbrev-ref", "HEAD"]);
-  const sha = run(["rev-parse", "HEAD"]);
-  const remote = run(["config", "--get", "remote.origin.url"]);
-  if (!branch && !sha && !remote) return undefined;
-  return { branch, sha, remote };
 }

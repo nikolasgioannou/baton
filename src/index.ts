@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 
 import { runExport } from "./cli/export.ts";
+import { runImport } from "./cli/import.ts";
 
 export async function main(argv: string[]): Promise<number> {
   const args = argv.slice(2);
@@ -19,6 +20,8 @@ export async function main(argv: string[]): Promise<number> {
   switch (cmd) {
     case "export":
       return await runExport(rest);
+    case "import":
+      return await runImport(rest);
     default:
       process.stderr.write(`baton: unknown command '${cmd}'\n`);
       process.stderr.write(usage());
