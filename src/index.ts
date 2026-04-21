@@ -3,6 +3,8 @@
 import { runExport } from "./cli/export.ts";
 import { runImport } from "./cli/import.ts";
 import { runInfo } from "./cli/info.ts";
+import { runUpdate } from "./cli/update.ts";
+import { runUninstall } from "./cli/uninstall.ts";
 import pkg from "../package.json" with { type: "json" };
 
 export async function main(argv: string[]): Promise<number> {
@@ -26,6 +28,10 @@ export async function main(argv: string[]): Promise<number> {
       return await runImport(rest);
     case "info":
       return await runInfo(rest);
+    case "update":
+      return await runUpdate(rest);
+    case "uninstall":
+      return await runUninstall(rest);
     default:
       process.stderr.write(`baton: unknown command '${cmd}'\n`);
       process.stderr.write(usage());
@@ -40,6 +46,8 @@ usage:
   baton export [sessionId]   package a session into a .baton file
   baton import <file>        unpack a .baton file into your claude config
   baton info   <file>        inspect a .baton file without importing
+  baton update               upgrade baton to the latest release
+  baton uninstall            remove the baton binary
 
 flags:
   -h, --help       show help

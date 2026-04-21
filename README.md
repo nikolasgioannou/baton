@@ -38,6 +38,23 @@ baton import received.baton --run   # imports and launches claude --resume
 
 After import, `claude --resume <new-id>` picks up where the sender left off.
 
+### Update
+
+```
+baton update              # install the latest release
+baton update --check      # check for updates without installing
+baton update --version v0.1.0    # install a specific release
+```
+
+### Uninstall
+
+```
+baton uninstall           # prompts for confirmation
+baton uninstall --yes     # skip confirmation (for scripts)
+```
+
+Only the binary is removed. Imported sessions under `~/.claude/projects` and restored file-history under `~/.claude/file-history` are left alone.
+
 ## What gets shared
 
 - The full message history (user prompts, assistant responses, tool calls, tool results)
