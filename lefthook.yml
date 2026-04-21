@@ -1,0 +1,19 @@
+pre-commit:
+  piped: true
+  commands:
+    1_format:
+      glob: "*.{ts,js,json,yml,yaml}"
+      run: bunx prettier --write {staged_files}
+      stage_fixed: true
+    2_lint:
+      glob: "*.{ts,js}"
+      run: bunx eslint --fix {staged_files}
+      stage_fixed: true
+    3_typecheck:
+      glob: "*.{ts,tsx}"
+      run: bunx tsc --noEmit
+
+commit-msg:
+  commands:
+    commitlint:
+      run: bunx --bun commitlint --edit {1}
