@@ -3,6 +3,7 @@
 import { runExport } from "./cli/export.ts";
 import { runImport } from "./cli/import.ts";
 import { runInfo } from "./cli/info.ts";
+import pkg from "../package.json" with { type: "json" };
 
 export async function main(argv: string[]): Promise<number> {
   const args = argv.slice(2);
@@ -47,7 +48,7 @@ flags:
 }
 
 function version(): string {
-  return "0.0.0";
+  return pkg.version;
 }
 
 if (import.meta.main) {
