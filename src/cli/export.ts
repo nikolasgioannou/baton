@@ -2,7 +2,7 @@ import { parseArgs } from "node:util";
 import { existsSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { homedir, userInfo, platform, arch } from "node:os";
-import { listSessionsForCwd, projectDirForCwd } from "../sessions.ts";
+import { listSessionsForCwd, projectDirForCwd, resolveSessionId } from "../sessions.ts";
 import { analyzeSessionJsonl } from "../analyze.ts";
 import { collectFileHistoryForSession, fileHistorySizeBytes } from "../backups.ts";
 import { packBaton } from "../container.ts";
@@ -62,7 +62,20 @@ export async function runExport(args: string[]): Promise<number> {
     }
   }
 
-  const sessionPath = join(projectDirForCwd(cwd), `${sessionId}.jsonl`);
+  const projectDir = projectDirForCwd(cwd);
+  const resolved = resolveSessionId(sessionId, projectDir);
+  if (!resolved.ok) {
+    if (resolved.reason === "none") {
+      process.stderr.write(`no session matching '${sessionId}' in ${cwd}\n`);
+    } else {
+      process.stderr.write(`ambiguous prefix '${sessionId}' — matches:\n`);
+      for (const m of resolved.matches) process.stderr.write(`  ${m}\n`);
+    }
+    return 1;
+  }
+  sessionId = resolved.id;
+
+  const sessionPath = join(projectDir, `${sessionId}.jsonl`);
   if (!existsSync(sessionPath)) {
     process.stderr.write(`session not found: ${sessionPath}\n`);
     return 1;

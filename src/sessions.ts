@@ -55,6 +55,24 @@ export function listSessionsInDir(projectDir: string): SessionInfo[] {
     .sort((a, b) => b.mtime.getTime() - a.mtime.getTime());
 }
 
+export type ResolveResult =
+  | { ok: true; id: string }
+  | { ok: false; reason: "none" }
+  | { ok: false; reason: "ambiguous"; matches: string[] };
+
+export function resolveSessionIdFromList(prefix: string, ids: string[]): ResolveResult {
+  if (ids.includes(prefix)) return { ok: true, id: prefix };
+  const matches = ids.filter((id) => id.startsWith(prefix));
+  if (matches.length === 1) return { ok: true, id: matches[0]! };
+  if (matches.length === 0) return { ok: false, reason: "none" };
+  return { ok: false, reason: "ambiguous", matches };
+}
+
+export function resolveSessionId(prefix: string, projectDir: string): ResolveResult {
+  const ids = existsSync(projectDir) ? listSessionsInDir(projectDir).map((s) => s.id) : [];
+  return resolveSessionIdFromList(prefix, ids);
+}
+
 export async function enrichSessionPreview(info: SessionInfo): Promise<SessionInfo> {
   const text = await Bun.file(info.path).text();
   const lines = text.split("\n").filter(Boolean);
