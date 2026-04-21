@@ -10,6 +10,7 @@ import { defaultBatonFilename, BATON_FORMAT_VERSION } from "../format.ts";
 import type { BatonManifest } from "../format.ts";
 import { formatBytes } from "../util.ts";
 import { detectGit } from "../git.ts";
+import { pickSession } from "./picker.ts";
 
 const EXPORT_USAGE = `baton export - package a claude code session
 
@@ -51,10 +52,13 @@ export async function runExport(args: string[]): Promise<number> {
       }
       sessionId = latest.id;
     } else {
-      process.stderr.write(
-        "baton export: specify a sessionId or --latest\n" + "(interactive picker is coming soon)\n",
-      );
-      return 2;
+      if (listSessionsForCwd(cwd).length === 0) {
+        process.stderr.write(`no claude code sessions found for ${cwd}\n`);
+        return 1;
+      }
+      const picked = await pickSession(cwd);
+      if (!picked) return 130;
+      sessionId = picked;
     }
   }
 
