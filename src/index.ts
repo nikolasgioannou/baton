@@ -1,6 +1,8 @@
 #!/usr/bin/env bun
 
-export function main(argv: string[]): number {
+import { runExport } from "./cli/export.ts";
+
+export async function main(argv: string[]): Promise<number> {
   const args = argv.slice(2);
   if (args.length === 0 || args[0] === "--help" || args[0] === "-h") {
     process.stdout.write(usage());
@@ -10,9 +12,18 @@ export function main(argv: string[]): number {
     process.stdout.write(`baton ${version()}\n`);
     return 0;
   }
-  process.stderr.write(`baton: unknown command '${args[0]}'\n`);
-  process.stderr.write(usage());
-  return 1;
+
+  const cmd = args[0];
+  const rest = args.slice(1);
+
+  switch (cmd) {
+    case "export":
+      return await runExport(rest);
+    default:
+      process.stderr.write(`baton: unknown command '${cmd}'\n`);
+      process.stderr.write(usage());
+      return 1;
+  }
 }
 
 function usage(): string {
@@ -34,5 +45,5 @@ function version(): string {
 }
 
 if (import.meta.main) {
-  process.exit(main(process.argv));
+  process.exit(await main(process.argv));
 }
