@@ -53,6 +53,7 @@ export async function unpackBaton(src: string): Promise<UnpackedBaton> {
   let manifest: BatonManifest | undefined;
   let sessionJsonl: string | undefined;
   const fileHistoryEntries: FileHistoryEntry[] = [];
+  let firstError: Error | undefined;
 
   const extract = tarExtract();
 
@@ -60,16 +61,28 @@ export async function unpackBaton(src: string): Promise<UnpackedBaton> {
     const chunks: Buffer[] = [];
     stream.on("data", (c: Buffer) => chunks.push(c));
     stream.on("end", () => {
-      const buf = Buffer.concat(chunks);
-      if (header.name === MANIFEST_FILENAME) {
-        manifest = JSON.parse(buf.toString("utf8")) as BatonManifest;
-      } else if (header.name === SESSION_FILENAME) {
-        sessionJsonl = buf.toString("utf8");
-      } else if (header.name.startsWith(`${FILE_HISTORY_DIR}/`)) {
-        const name = header.name.slice(FILE_HISTORY_DIR.length + 1);
-        if (name.length > 0) {
-          fileHistoryEntries.push({ name, contents: buf });
+      if (firstError) {
+        next();
+        return;
+      }
+      try {
+        const buf = Buffer.concat(chunks);
+        const result = processEntry(header.name, buf);
+        if (result.kind === "manifest") {
+          if (manifest !== undefined) {
+            throw new Error("duplicate manifest.json in archive");
+          }
+          manifest = result.manifest;
+        } else if (result.kind === "session") {
+          if (sessionJsonl !== undefined) {
+            throw new Error("duplicate session.jsonl in archive");
+          }
+          sessionJsonl = result.text;
+        } else {
+          fileHistoryEntries.push(result.entry);
         }
+      } catch (err) {
+        firstError = err instanceof Error ? err : new Error(String(err));
       }
       next();
     });
@@ -78,10 +91,64 @@ export async function unpackBaton(src: string): Promise<UnpackedBaton> {
 
   await pipeline(source, createGunzip(), extract);
 
+  if (firstError) throw firstError;
   if (!manifest) throw new Error("baton archive missing manifest.json");
   if (sessionJsonl === undefined) throw new Error("baton archive missing session.jsonl");
 
   assertSupportedFormatVersion((manifest as { batonFormatVersion?: unknown }).batonFormatVersion);
 
   return { manifest, sessionJsonl, fileHistoryEntries };
+}
+
+type ProcessedEntry =
+  | { kind: "manifest"; manifest: BatonManifest }
+  | { kind: "session"; text: string }
+  | { kind: "fileHistory"; entry: FileHistoryEntry };
+
+function processEntry(name: string, buf: Buffer): ProcessedEntry {
+  assertSafeTarEntryName(name);
+
+  if (name === MANIFEST_FILENAME) {
+    return { kind: "manifest", manifest: JSON.parse(buf.toString("utf8")) as BatonManifest };
+  }
+  if (name === SESSION_FILENAME) {
+    return { kind: "session", text: buf.toString("utf8") };
+  }
+  if (name.startsWith(`${FILE_HISTORY_DIR}/`)) {
+    const entryName = name.slice(FILE_HISTORY_DIR.length + 1);
+    assertSafeEntryName(entryName);
+    return { kind: "fileHistory", entry: { name: entryName, contents: buf } };
+  }
+  throw new Error(`unexpected entry in baton archive: ${JSON.stringify(name)}`);
+}
+
+/**
+ * Reject absolute paths and any `..` segment across the whole tar, before we
+ * even decide which slot the entry belongs to.
+ */
+function assertSafeTarEntryName(name: string): void {
+  if (!name) throw new Error("empty tar entry name");
+  if (name.startsWith("/")) {
+    throw new Error(`refusing absolute path in archive: ${name}`);
+  }
+  const segments = name.split("/");
+  for (const seg of segments) {
+    if (seg === ".." || seg === ".") {
+      throw new Error(`refusing path-traversal segment in archive: ${name}`);
+    }
+  }
+}
+
+/**
+ * For file-history entries specifically: must be a single flat filename with
+ * no separators, no leading dot, no traversal.
+ */
+function assertSafeEntryName(name: string): void {
+  if (!name) throw new Error("empty file-history entry name");
+  if (name.includes("/") || name.includes("\\")) {
+    throw new Error(`refusing nested file-history entry: ${name}`);
+  }
+  if (name.startsWith(".")) {
+    throw new Error(`refusing dotfile file-history entry: ${name}`);
+  }
 }
