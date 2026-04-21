@@ -58,7 +58,7 @@ main() {
 
   mkdir -p "$INSTALL_DIR"
   tmp="$(mktemp)"
-  trap 'rm -f "$tmp"' EXIT
+  trap 'rm -f "${tmp:-}"' EXIT
 
   printf "installing baton %s (%s) -> %s/baton\n" "$version" "$platform" "$INSTALL_DIR"
   curl -fL --progress-bar -o "$tmp" "$url" \
