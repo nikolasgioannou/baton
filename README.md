@@ -8,6 +8,14 @@ Share Claude Code conversations with others. Like `claude --resume`, but for som
 
 ## Install
 
+Homebrew (macOS, Linux):
+
+```
+brew install nikolasgioannou/tap/baton
+```
+
+Or with curl:
+
 ```
 curl -fsSL https://raw.githubusercontent.com/nikolasgioannou/baton/main/install.sh | bash
 ```
