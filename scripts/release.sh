@@ -50,7 +50,7 @@ TAG="v$NEW_VERSION"
 
 git add package.json
 git commit -m "chore: release $TAG"
-git tag "$TAG"
+git tag -a -m "release $TAG" "$TAG"
 
 echo
 echo "pushing $TAG — CI will build the release binaries."
